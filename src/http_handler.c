@@ -1,11 +1,11 @@
 #include <stdio.h>
-#include <sys/socket.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <string.h>
 #include <sys/stat.h>
-
+#include <sys/socket.h>
+#include <time.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include "http_handler.h"
 
 int startUp(unsigned short port)
@@ -43,11 +43,11 @@ int startUp(unsigned short port)
     return serverSocket;
 }
 
-void *received_request(void *arg)
+void received_request(void *arg)
 {
     int clientSocket = (intptr_t)arg;
     char buf[1024];
-    unsigned int numChars; //unsigned int
+    int numChars; //unsigned int
     char method[256];
     char url[256];
     char path[256];
@@ -67,9 +67,9 @@ void *received_request(void *arg)
 
     if (strcasecmp(method, "GET") && strcasecmp(method, "POST"))
     {
-        //返回一个 html页面 501
-        unimplemented(clientSocket);
-        return NULL;
+        //return a html 501 page
+        not_implemented(clientSocket);
+        return;
     }
 
     i++;
@@ -82,31 +82,21 @@ void *received_request(void *arg)
     }
     url[j] = '\0'; //url string
 
-    if (strcasecmp(method, "GET") == 0)
-    {
-
-    }
 
     sprintf(path, "htdocs%s", url);
     if (path[strlen(path) - 1] == '/')
         strcat(path, "index.html");
-    if (stat(path, &st) == -1) {  //检查指定路径的文件或目录是否存在。如果 stat() 返回 -1，可能是因为文件或目录不存在、权限不足或其他错误原因
-        while ((numChars > 0) && strcmp("\n", buf))  /* read & discard headers */
+    if (stat(path, &st) == -1) {
+        while ((numChars > 0) && strcmp("\n", buf))  // read & discard headers
             numChars = get_line(clientSocket, buf, sizeof(buf));
         not_found(clientSocket);
     }
     else
     {
-        if ((st.st_mode & S_IFMT) == S_IFDIR)
-            strcat(path, "/index.html");
-
-
         index_file(clientSocket, path);
-
     }
     close(clientSocket);
 }
-
 
 unsigned int get_line(int clientSocket, char *buf, int lenClientSocket)
 {
@@ -135,7 +125,151 @@ unsigned int get_line(int clientSocket, char *buf, int lenClientSocket)
     return i;
 }
 
+void index_file(int clientSocket, char *fileName)
+{
 
+    int numChars = 1;
+    char buf[1024];
+
+    buf[0] = 'A'; buf[1] = '\0';
+    while ((numChars > 0) && strcmp("\n", buf))  // read & discard headers
+        numChars = get_line(clientSocket, buf, sizeof(buf));
+
+
+    FILE *file = fopen(fileName, "r");
+    if(file == NULL)
+        not_found(clientSocket);
+    else
+    {
+        successful_headers(clientSocket, file);
+        file_text(clientSocket, file);
+    }
+    fclose(file);
+}
+
+void successful_headers(int clientSocket, FILE *file)
+{
+    char buf[1024];
+    (void)file;
+    // get local time
+    time_t rawTime;
+    struct tm *timeInfo;
+    time(&rawTime);
+    timeInfo = gmtime(&rawTime);
+
+    // format string as "Sat, 01 Jan 2022 12:00:00 GMT"
+    char timeString[50];
+    strftime(timeString, sizeof(timeString), "%a, %d %b %Y %H:%M:%S GMT", timeInfo);
+
+    strcpy(buf, "HTTP/1.0 200 OK\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Date: %s\r\n", timeString);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "%s\r\n",SERVER_STRING);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    strcpy(buf, "\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+
+}
+
+void file_text(int clientSocket, FILE *file)
+{
+    char buf[1024];
+    //read a line into buf
+    fgets(buf, sizeof(buf), file);
+    while (!feof(file))
+    {
+        send(clientSocket, buf, strlen(buf), 0);
+        fgets(buf, sizeof(buf), file);
+    }
+}
+
+void not_implemented(int clientSocket)
+{
+    char buf[1024];
+    // get local time
+    time_t rawTime;
+    struct tm *timeInfo;
+    time(&rawTime);
+    timeInfo = gmtime(&rawTime);
+
+    // format string as "Sat, 01 Jan 2022 12:00:00 GMT"
+    char timeString[50];
+    strftime(timeString, sizeof(timeString), "%a, %d %b %Y %H:%M:%S GMT", timeInfo);
+
+    sprintf(buf, "HTTP/1.0 501 Method Not Implemented\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Date: %s\r\n", timeString);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "%s\r\n",SERVER_STRING);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+
+    sprintf(buf, "<!DOCTYPE>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<html>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<head><title>Method Not Implemented</title></head>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<body>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<h1>501 Not Implemented</h1>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<p>The server does not support the functionality required to fulfill the request.</p>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "</body>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "</html>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+}
+
+void not_found(int clientSocket)
+{
+    char buf[1024];
+    // get local time
+    time_t rawTime;
+    struct tm *timeInfo;
+    time(&rawTime);
+    timeInfo = gmtime(&rawTime);
+
+    // format string as "Sat, 01 Jan 2022 12:00:00 GMT"
+    char timeString[50];
+    strftime(timeString, sizeof(timeString), "%a, %d %b %Y %H:%M:%S GMT", timeInfo);
+
+    sprintf(buf, "HTTP/1.1 404 Not Found\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Date: %s\r\n", timeString);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "%s\r\n",SERVER_STRING);
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+
+    sprintf(buf, "<!DOCTYPE html>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<html>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<head><title>404 Not Found</title></head>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<body>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<h1>404 Not Found</h1>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "<p>The requested URL was not found on this server.</p>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "</body>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+    sprintf(buf, "</html>\r\n");
+    send(clientSocket, buf, strlen(buf), 0);
+
+}
 
 void handleError(char *error)
 {

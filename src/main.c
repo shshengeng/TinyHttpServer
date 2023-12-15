@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <pthread.h>
-#include <unistd.h>
 #include "http_handler.h"
 
 int main()
