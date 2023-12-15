@@ -6,9 +6,9 @@
 
 int startUp(unsigned short port);
 void received_request(void *arg);
-unsigned int get_line(int clientSocket, char *buf, int lenClientSocket);
+int get_line(int clientSocket, char *buf);
 void index_file(int clientSocket, char *fileName);
-void successful_headers(int clientSocket, FILE *file);
+void successful_headers(int clientSocket, FILE *file, char *type);
 void file_text(int clientSocket, FILE *file);
 void handleError(char *error);
 void not_implemented(int clientSocket);

@@ -39,7 +39,6 @@ int startUp(unsigned short port)
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
-
     return serverSocket;
 }
 
@@ -53,8 +52,9 @@ void received_request(void *arg)
     char path[256];
     struct stat st;
 
+
     //GET / Http1.1
-    numChars = get_line(clientSocket, buf, sizeof(clientSocket));
+    numChars = get_line(clientSocket, buf);
     int i, j = 0;
     //buf[i] is not a space
     while (buf[i] != ' ' && (i < sizeof(buf) - 1))
@@ -83,12 +83,12 @@ void received_request(void *arg)
     url[j] = '\0'; //url string
 
 
-    sprintf(path, "htdocs%s", url);
+    sprintf(path, "../htdocs%s", url);
     if (path[strlen(path) - 1] == '/')
         strcat(path, "index.html");
     if (stat(path, &st) == -1) {
         while ((numChars > 0) && strcmp("\n", buf))  // read & discard headers
-            numChars = get_line(clientSocket, buf, sizeof(buf));
+            numChars = get_line(clientSocket, buf);
         not_found(clientSocket);
     }
     else
@@ -98,30 +98,34 @@ void received_request(void *arg)
     close(clientSocket);
 }
 
-unsigned int get_line(int clientSocket, char *buf, int lenClientSocket)
+ int get_line(int clientSocket, char *buf)
 {
     char c = '0';
     int i = 0;
     int num;
 
     //receive from socket buffer until get '\n'
-    while(c != '\n' && i < lenClientSocket)
+    while(c != '\n' && i < 1024)
     {
         num = recv(clientSocket, &c, 1, 0);
         if(num > 0)
         {
-//            if(c == '\r')
-//            {
-//                len = recv(clientSocket, &c, 1, 0);
-//                if(c == '\n')
-//
-//            }
+          if (c == '\r')
+            {
+                num = recv(clientSocket, &c, 1, MSG_PEEK);
+                // DEBUG printf("%02X\n", c);
+                if ((num > 0) && (c == '\n'))
+                    recv(clientSocket, &c, 1, 0);
+                else
+                    c = '\n';
+            }
             buf[i] = c;
             i++;
         }
         else
             c = '\n';
     }
+    buf[i] = '\0';
     return i;
 }
 
@@ -133,7 +137,7 @@ void index_file(int clientSocket, char *fileName)
 
     buf[0] = 'A'; buf[1] = '\0';
     while ((numChars > 0) && strcmp("\n", buf))  // read & discard headers
-        numChars = get_line(clientSocket, buf, sizeof(buf));
+        numChars = get_line(clientSocket, buf);
 
 
     FILE *file = fopen(fileName, "r");
@@ -141,13 +145,13 @@ void index_file(int clientSocket, char *fileName)
         not_found(clientSocket);
     else
     {
-        successful_headers(clientSocket, file);
+        successful_headers(clientSocket, file, "html");
         file_text(clientSocket, file);
     }
     fclose(file);
 }
 
-void successful_headers(int clientSocket, FILE *file)
+void successful_headers(int clientSocket, FILE *file, char *type)
 {
     char buf[1024];
     (void)file;
@@ -167,7 +171,7 @@ void successful_headers(int clientSocket, FILE *file)
     send(clientSocket, buf, strlen(buf), 0);
     sprintf(buf, "%s\r\n",SERVER_STRING);
     send(clientSocket, buf, strlen(buf), 0);
-    sprintf(buf, "Content-Type: text/html\r\n");
+    sprintf(buf, "Content-Type: text/%s\r\n", type);
     send(clientSocket, buf, strlen(buf), 0);
     strcpy(buf, "\r\n");
     send(clientSocket, buf, strlen(buf), 0);
