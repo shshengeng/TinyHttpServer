@@ -49,21 +49,17 @@ cmake_ninja_workdir = /Users/zhangbaisheng/CLionProjects/TinyHttpServer/cmake-bu
 
 build cmake_object_order_depends_target_TinyHttpServer: phony || CMakeFiles/TinyHttpServer.dir
 
-build CMakeFiles/TinyHttpServer.dir/main.c.o: C_COMPILER__TinyHttpServer_unscanned_Debug /Users/zhangbaisheng/CLionProjects/TinyHttpServer/main.c || cmake_object_order_depends_target_TinyHttpServer
-  DEP_FILE = CMakeFiles/TinyHttpServer.dir/main.c.o.d
-  FLAGS = -g -std=gnu11 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -mmacosx-version-min=13.6 -fcolor-diagnostics
-  OBJECT_DIR = CMakeFiles/TinyHttpServer.dir
-  OBJECT_FILE_DIR = CMakeFiles/TinyHttpServer.dir
-
 build CMakeFiles/TinyHttpServer.dir/src/http_handler.c.o: C_COMPILER__TinyHttpServer_unscanned_Debug /Users/zhangbaisheng/CLionProjects/TinyHttpServer/src/http_handler.c || cmake_object_order_depends_target_TinyHttpServer
   DEP_FILE = CMakeFiles/TinyHttpServer.dir/src/http_handler.c.o.d
   FLAGS = -g -std=gnu11 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -mmacosx-version-min=13.6 -fcolor-diagnostics
+  INCLUDES = -I/Users/zhangbaisheng/CLionProjects/TinyHttpServer/include
   OBJECT_DIR = CMakeFiles/TinyHttpServer.dir
   OBJECT_FILE_DIR = CMakeFiles/TinyHttpServer.dir/src
 
 build CMakeFiles/TinyHttpServer.dir/src/main.c.o: C_COMPILER__TinyHttpServer_unscanned_Debug /Users/zhangbaisheng/CLionProjects/TinyHttpServer/src/main.c || cmake_object_order_depends_target_TinyHttpServer
   DEP_FILE = CMakeFiles/TinyHttpServer.dir/src/main.c.o.d
   FLAGS = -g -std=gnu11 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -mmacosx-version-min=13.6 -fcolor-diagnostics
+  INCLUDES = -I/Users/zhangbaisheng/CLionProjects/TinyHttpServer/include
   OBJECT_DIR = CMakeFiles/TinyHttpServer.dir
   OBJECT_FILE_DIR = CMakeFiles/TinyHttpServer.dir/src
 
@@ -75,7 +71,7 @@ build CMakeFiles/TinyHttpServer.dir/src/main.c.o: C_COMPILER__TinyHttpServer_uns
 #############################################
 # Link the executable TinyHttpServer
 
-build TinyHttpServer: C_EXECUTABLE_LINKER__TinyHttpServer_Debug CMakeFiles/TinyHttpServer.dir/main.c.o CMakeFiles/TinyHttpServer.dir/src/http_handler.c.o CMakeFiles/TinyHttpServer.dir/src/main.c.o
+build TinyHttpServer: C_EXECUTABLE_LINKER__TinyHttpServer_Debug CMakeFiles/TinyHttpServer.dir/src/http_handler.c.o CMakeFiles/TinyHttpServer.dir/src/main.c.o
   FLAGS = -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -mmacosx-version-min=13.6
   OBJECT_DIR = CMakeFiles/TinyHttpServer.dir
   POST_BUILD = :
